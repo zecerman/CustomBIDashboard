@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Business Intelligence Dashboard</title>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Business Intelligence Dashboard</h1>
+        <p>Sales performance overview (demo data + interactive filters)</p>
+      </div>
+      <div class="pill" id="asOf">As of —</div>
+    </header>
+
+    <div class="grid">
+
+      <!-- Filters -->
+      <section class="card filters">
+        <div class="field">
+          <label for="start">Start date</label>
+          <input id="start" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="end">End date</label>
+          <input id="end" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="region">Region</label>
+          <select id="region">
+            <option value="All">All</option>
+            <option value="Midwest">Midwest</option>
+            <option value="Northeast">Northeast</option>
+            <option value="South">South</option>
+            <option value="West">West</option>
+          </select>
+        </div>
+
+        <div class="field search-field">
+          <label for="search">Search customers/products</label>
+          <input id="search" placeholder="e.g., Acme, Widget, Detroit…" />
+        </div>
+
+        <div class="btn-row">
+          <button id="apply">Apply</button>
+          <button id="reset" class="btn-secondary">Reset</button>
+        </div>
+      </section>
+
+      <!-- KPI Cards -->
+      <section class="kpis" id="kpis"></section>
+
+      <!-- Charts -->
+      <section class="card chart">
+        <h2>Revenue over time</h2>
+        <canvas id="revLine" width="900" height="320"></canvas>
+        <div class="legend">
+          <span><span class="dot"></span>Revenue</span>
+          <span><span class="dot good"></span>Orders</span>
+        </div>
+      </section>
+
+      <section class="card chart small">
+        <h2>Revenue by region</h2>
+        <canvas id="regionBar" width="900" height="320"></canvas>
+        <div class="legend">
+          <span><span class="dot"></span>Revenue</span>
+        </div>
+      </section>
+
+      <!-- Table -->
+      <section class="card table-card">
+        <div class="table-top">
+          <div class="left">
+            <h2>Transactions</h2>
+            <span class="hint" id="rowCount">—</span>
+          </div>
+          <span class="hint">Click a header to sort</span>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="date">Date <span class="sort" id="s-date"></span></th>
+                <th data-key="customer">Customer <span class="sort" id="s-customer"></span></th>
+                <th data-key="product">Product <span class="sort" id="s-product"></span></th>
+                <th data-key="region">Region <span class="sort" id="s-region"></span></th>
+                <th data-key="orders" class="right">Orders <span class="sort" id="s-orders"></span></th>
+                <th data-key="revenue" class="right">Revenue <span class="sort" id="s-revenue"></span></th>
+                <th data-key="conv" class="right">Conv. <span class="sort" id="s-conv"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <footer>
+      Demo dashboard. Replace demo data in <code>script.js</code> with your API.
+    </footer>
+  </div>
+
+  <!-- External JS -->
+  <script src="script.js"></script>
+</body>
+</html>
