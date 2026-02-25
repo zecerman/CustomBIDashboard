@@ -1,2 +1,2 @@
 # CustomBIDashboard
-This is a fully slef contained Business Intelligence Dashboard web app
+This is a fully self contained Business Intelligence Dashboard web app
