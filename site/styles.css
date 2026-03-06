@@ -1,0 +1,67 @@
+/* Styling for basic elements V */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+header {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 20px;
+  border-bottom: 1px solid #333;
+}
+
+h1 {
+  margin: 0;
+}
+
+div {
+  padding: 20px;
+}
+
+footer {
+  text-align: center;
+  padding: 10px;
+  background-color: #1e1e1e;
+  border-top: 1px solid #333;
+}
+/* Styling for basic elements ^ */
+
+/* Table settings V (remember that our dashboard is a table) */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
+}
+
+th {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #444;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #333;
+}
+
+/* Alternating row color */
+tr:nth-child(even) {
+  background-color: #202020;
+}
+
+/* Hover highlight */
+tr:hover {
+  background-color: #2f2f2f;
+}
+/* Table settings ^ */
+
+/* Custom element stylng V */
+.dasboard_form {
+  justify-items: center; /* TODO: how to center a divvvvv? */
+}
+/* Custom element stylng ^ */

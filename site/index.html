@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Ordinary head settings-->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Business Intelligence Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="all"> <!-- Overall site container -->
+    <header>
+      <div>
+        <h1>Business Intelligence Dashboard</h1>
+        <p>Placeholder header text</p>
+      </div>
+    </header>
+
+    <!-- Central "dashboard" widgit, primary functionality of the site -->
+    <form id="dashboard_form">
+      <label>Query:</label>
+      <input type="text" id="dashboard_query" value="SELECT * FROM Sample_Table LIMIT 10">
+      <input type="submit" value="run">
+    </form>
+    <table id="dashboard"><!-- Is populated by "loadDatabase()" --></table>
+    
+  </div>
+  <!-- Obligatory API call, better to do once per pageload than once for each function call -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  <script src="scripts/script.js"></script>
+
+
+<footer>Placeholder footer text</footer>
+</body>
+</html>
