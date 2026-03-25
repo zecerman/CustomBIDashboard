@@ -4,30 +4,39 @@ import os
 
 # Prompt user
 filename = input('Please enter the CSV\'s full path including filename: ').strip()
+
 # Handle missing .csv
-l = len(filename)
-if filename[l-4:l] != '.csv':
-    filename = filename + '.csv'
-# Handle non-existant file
+if not filename.lower().endswith(".csv"):
+    filename += ".csv"
+# Handle non-existent file
 if not os.path.exists(filename):
-    print('A File with that name was not found.')
+    print("A file with that name was not found.")
     exit()
+
 # File must exist, load into dataframe
-# TODO For now we will interperet each row as string
-df = pd.read_csv(filename, dtype=str)
+df = pd.read_csv(filename)
 
 # Create vars for execution
-db_filename = os.path.splitext(filename[0:l-4])[0] + '.db'
-conn = sqlite3.connect(db_filename)
+db_filename = os.path.splitext(filename)[0] + ".db"
+
+# Map pandas dtypes to SQLite dtypes
 dtypes = {}
-for e in df.columns:
-    dtypes[e] = 'VARCHAR'
+for col, dtype in df.dtypes.items():
+    if pd.api.types.is_integer_dtype(dtype):
+        dtypes[col] = "INTEGER"
+    elif pd.api.types.is_float_dtype(dtype):
+        dtypes[col] = "REAL"
+    else:
+        dtypes[col] = "TEXT"
+
+# Connect and write table
+conn = sqlite3.connect(db_filename)
 
 # Execute
 df.to_sql(
-    'Sample_Table',
+    "Sample_Table",
     conn,
-    if_exists='replace',
+    if_exists="replace",
     index=False,
     dtype=dtypes
 )
