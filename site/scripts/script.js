@@ -2,10 +2,10 @@
 let SQLPromise = null;
 let dbPromise = null;
 let performanceChart = null;
+let resultsData = [];
 
 // v CHECK FOR SQL & DB LOAD THEM IF SO
 function getSqlJsInstance() {
-  // Helper which loads sql object from cloudflare
   if (!SQLPromise) {
     SQLPromise = initSqlJs({
       locateFile: function (file) {
@@ -17,11 +17,9 @@ function getSqlJsInstance() {
 }
 
 async function getDatabase() {
-  // Helper which loads the db, depends on SQL object
   if (!dbPromise) {
     dbPromise = (async function () {
       const SQL = await getSqlJsInstance();
-      // Database path is currently hard coded, which is fine
       const response = await fetch("data/data.db");
 
       if (!response.ok) {
@@ -36,11 +34,354 @@ async function getDatabase() {
 }
 // ^ CHECK FOR SQL & DB LOAD THEM IF SO
 
-// v HELPER FUNCTIONS FOR ALTERING TEXT CONTENT
-function escapeSqlString(value) {
-  return String(value).replace(/'/g, "''");
+// v CSV LOADING FUNCTIONS
+function parseCsvRow(row) {
+  const values = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i];
+    const nextChar = row[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      values.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current);
+  return values;
 }
 
+async function loadResultsCsv() {
+  const response = await fetch("data/results.csv");
+
+  if (!response.ok) {
+    throw new Error(`Could not load results.csv: ${response.status} ${response.statusText}`);
+  }
+
+  const csvText = await response.text();
+  const lines = csvText.trim().split(/\r?\n/);
+
+  if (lines.length < 2) {
+    resultsData = [];
+    window.resultsData = resultsData;
+    return;
+  }
+
+  const headers = parseCsvRow(lines[0]);
+
+  resultsData = lines.slice(1).map(line => {
+    const values = parseCsvRow(line);
+    const row = {};
+
+    headers.forEach((header, index) => {
+      row[header] = values[index] ?? "";
+    });
+
+    return {
+      StoreID: Number(row.StoreID),
+      FiscalYearID: Number(row.FiscalYearID),
+      CalendarID: Number(row.CalendarID),
+      flags: row.flags && row.flags.trim() !== "" ? row.flags.trim() : "No Flag",
+      is_at_risk: String(row.is_at_risk).toLowerCase() === "true",
+      predicted_sales: Number(row.predicted_sales || 0),
+      risk_label: Number(row.risk_label || 0),
+      risk_probability: Number(row.risk_probability || 0)
+    };
+  });
+
+  console.log("Loaded results.csv rows:", resultsData.length);
+  window.resultsData = resultsData;
+}
+// ^ CSV LOADING FUNCTIONS
+
+// v MONTH HELPERS
+const MONTH_NAMES = {
+  1: "January",
+  2: "February",
+  3: "March",
+  4: "April",
+  5: "May",
+  6: "June",
+  7: "July",
+  8: "August",
+  9: "September",
+  10: "October",
+  11: "November",
+  12: "December"
+};
+
+function getMonthName(monthNumber) {
+  return MONTH_NAMES[monthNumber] || `Month ${monthNumber}`;
+}
+
+function populateResultsFilters() {
+  const resultsStoreSelect = document.getElementById("results_store_select");
+  const resultsMonthSelect = document.getElementById("results_month_select");
+
+  if (!resultsStoreSelect || !resultsMonthSelect) {
+    console.error("Results filter dropdowns were not found in index.html");
+    return;
+  }
+
+  resultsStoreSelect.innerHTML = `<option value="">All Stores</option>`;
+  resultsMonthSelect.innerHTML = `<option value="">All Months</option>`;
+
+  const uniqueStores = [...new Set(resultsData.map(row => row.StoreID))]
+    .filter(storeId => !Number.isNaN(storeId))
+    .sort((a, b) => a - b);
+
+  const uniqueMonths = [...new Set(resultsData.map(row => row.CalendarID))]
+    .filter(month => !Number.isNaN(month))
+    .sort((a, b) => a - b);
+
+  uniqueStores.forEach(storeId => {
+    const option = document.createElement("option");
+    option.value = storeId;
+    option.textContent = storeId;
+    resultsStoreSelect.appendChild(option);
+  });
+
+  uniqueMonths.forEach(month => {
+    const option = document.createElement("option");
+    option.value = month;
+    option.textContent = getMonthName(month);
+    resultsMonthSelect.appendChild(option);
+  });
+}
+// ^ MONTH HELPERS
+
+// v RESULTS HELPERS
+function getFilteredResults(storeId, monthId) {
+  return resultsData.filter(row => {
+    const storeMatches = storeId === "" || row.StoreID === Number(storeId);
+    const monthMatches = monthId === "" || row.CalendarID === Number(monthId);
+    return storeMatches && monthMatches;
+  });
+}
+
+function formatRiskLabel(value) {
+  return Number(value) === 1 ? "At Risk" : "Normal";
+}
+
+function formatRiskStatus(value) {
+  return value ? "At Risk" : "Not At Risk";
+}
+
+function formatCurrency(value) {
+  return `$${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+function getRiskTone(probability, isAtRisk) {
+  if (isAtRisk || probability >= 0.75) return "high";
+  if (probability >= 0.4) return "medium";
+  return "low";
+}
+
+function getMode(values, fallback = "No Data") {
+  if (!values.length) return fallback;
+
+  const counts = {};
+  let bestValue = fallback;
+  let bestCount = 0;
+
+  values.forEach(value => {
+    const key = String(value);
+    counts[key] = (counts[key] || 0) + 1;
+
+    if (counts[key] > bestCount) {
+      bestCount = counts[key];
+      bestValue = value;
+    }
+  });
+
+  return bestValue;
+}
+
+function average(numbers) {
+  if (!numbers.length) return 0;
+  return numbers.reduce((sum, value) => sum + Number(value || 0), 0) / numbers.length;
+}
+
+function summarizeFilteredRows(filteredRows, storeId, monthId) {
+  if (!filteredRows.length) {
+    return {
+      storeText: storeId || "All Stores",
+      monthText: monthId ? getMonthName(Number(monthId)) : "All Months",
+      flagText: "No data",
+      riskText: "No data",
+      riskLabelText: "No data",
+      predictedSalesText: "$0.00",
+      rowsMatched: 0,
+      probabilityPercent: 0,
+      tone: "low",
+      uniqueStoreCount: 0,
+      atRiskCount: 0
+    };
+  }
+
+  const isSingleStore = storeId !== "";
+  const isSingleMonth = monthId !== "";
+
+  const riskProbabilityAvg = average(filteredRows.map(row => row.risk_probability));
+  const predictedSalesAvg = average(filteredRows.map(row => row.predicted_sales));
+  const atRiskCount = filteredRows.filter(row => row.is_at_risk).length;
+  const uniqueStoreCount = new Set(filteredRows.map(row => row.StoreID)).size;
+
+  const flagMode = getMode(filteredRows.map(row => row.flags), "No Flag");
+  const riskLabelModeRaw = getMode(filteredRows.map(row => row.risk_label), 0);
+  const riskLabelMode = formatRiskLabel(riskLabelModeRaw);
+
+  let riskText = "Not At Risk";
+  if (atRiskCount > 0) {
+    riskText = isSingleStore && isSingleMonth
+      ? formatRiskStatus(filteredRows[0].is_at_risk)
+      : `${atRiskCount} At-Risk Rows`;
+  }
+
+  const probabilityPercent = Math.max(0, Math.min(100, riskProbabilityAvg * 100));
+  const tone = getRiskTone(riskProbabilityAvg, atRiskCount > 0);
+
+  return {
+    storeText: isSingleStore ? storeId : `All Stores (${uniqueStoreCount})`,
+    monthText: isSingleMonth ? getMonthName(Number(monthId)) : "All Months",
+    flagText: flagMode,
+    riskText,
+    riskLabelText: riskLabelMode,
+    predictedSalesText: formatCurrency(predictedSalesAvg),
+    rowsMatched: filteredRows.length,
+    probabilityPercent,
+    tone,
+    uniqueStoreCount,
+    atRiskCount
+  };
+}
+// ^ RESULTS HELPERS
+
+// v LOWER SUMMARY CARDS
+function renderResultsSummaryCards(filteredRows, storeId, monthId) {
+  const cardsContainer = document.getElementById("results_summary_cards");
+  if (!cardsContainer) return;
+
+  const summary = summarizeFilteredRows(filteredRows, storeId, monthId);
+
+  cardsContainer.innerHTML = `
+    <div class="summary-card">
+      <strong>Store</strong>
+      <span>${summary.storeText}</span>
+    </div>
+
+    <div class="summary-card">
+      <strong>Month</strong>
+      <span>${summary.monthText}</span>
+    </div>
+
+    <div class="summary-card">
+      <strong>Flag</strong>
+      <span>${summary.flagText}</span>
+    </div>
+
+    <div class="summary-card">
+      <strong>Risk</strong>
+      <span>${summary.riskText}</span>
+    </div>
+
+    <div class="summary-card">
+      <strong>Risk Label</strong>
+      <span>${summary.riskLabelText}</span>
+    </div>
+  `;
+}
+// ^ LOWER SUMMARY CARDS
+
+// v SINGLE RISK INSIGHT PANEL
+function renderRiskInsightPanel(filteredRows, storeId, monthId) {
+  const panel = document.getElementById("risk_insight_panel");
+  if (!panel) return;
+
+  const summary = summarizeFilteredRows(filteredRows, storeId, monthId);
+
+  if (!filteredRows.length) {
+    panel.innerHTML = `
+      <div class="insight-empty-state">
+        <p>No rows found for this selection.</p>
+        <p><strong>Store:</strong> ${summary.storeText}</p>
+        <p><strong>Month:</strong> ${summary.monthText}</p>
+      </div>
+    `;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="risk-insight-layout">
+      <div class="risk-status-block">
+        <div class="risk-status-pill risk-tone-${summary.tone}">
+          ${summary.riskText}
+        </div>
+
+        <div class="risk-score-wrap">
+          <div class="risk-score-label-row">
+            <span>Average Risk Probability</span>
+            <span>${summary.probabilityPercent.toFixed(2)}%</span>
+          </div>
+
+          <div class="risk-progress-track">
+            <div class="risk-progress-fill risk-tone-${summary.tone}" style="width: ${summary.probabilityPercent}%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="risk-insight-grid">
+        <div class="risk-insight-item">
+          <strong>Store</strong>
+          <span>${summary.storeText}</span>
+        </div>
+
+        <div class="risk-insight-item">
+          <strong>Month</strong>
+          <span>${summary.monthText}</span>
+        </div>
+
+        <div class="risk-insight-item">
+          <strong>Most Common Flag</strong>
+          <span>${summary.flagText}</span>
+        </div>
+
+        <div class="risk-insight-item">
+          <strong>Most Common Risk Label</strong>
+          <span>${summary.riskLabelText}</span>
+        </div>
+
+        <div class="risk-insight-item">
+          <strong>Average Predicted Sales</strong>
+          <span>${summary.predictedSalesText}</span>
+        </div>
+
+        <div class="risk-insight-item">
+          <strong>Rows Matched</strong>
+          <span>${summary.rowsMatched}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+// ^ SINGLE RISK INSIGHT PANEL
+
+// v HELPER FUNCTIONS FOR ALTERING TEXT CONTENT
 function showMessage(message) {
   const el = document.getElementById("dashboard_message");
   if (el) {
@@ -66,9 +407,7 @@ function clearTable() {
 
 function renderTable(result) {
   const table = document.getElementById("dashboard");
-  if (!table) {
-    return;
-  }
+  if (!table) return;
 
   table.innerHTML = "";
 
@@ -109,7 +448,7 @@ function renderTable(result) {
 }
 // ^ TABLE FUNCTIONS
 
-// v CHART FUNCTIONS
+// v TOP CHART FUNCTIONS
 function destroyChart() {
   if (performanceChart) {
     performanceChart.destroy();
@@ -118,16 +457,13 @@ function destroyChart() {
 }
 
 function renderChart(rows, labelText, yAxisLabel) {
-  // Logic for placeholder img
   const placeholder = document.getElementById("chart_placeholder");
   if (placeholder) {
     placeholder.style.display = "none";
   }
 
   const canvas = document.getElementById("performance_chart");
-  if (!canvas) {
-    return;
-  }
+  if (!canvas) return;
 
   destroyChart();
 
@@ -185,14 +521,12 @@ function renderChart(rows, labelText, yAxisLabel) {
     }
   });
 }
-// ^ CHART FUNCTIONS
+// ^ TOP CHART FUNCTIONS
 
-// v POPULATE OPTIONS FOR THE USER'S DROPDOWN MENU AUTOMATICALLY 
+// v TOP DROPDOWN FILTERS
 function fillSelect(selectId, rows, allLabel, valueIndex, textIndex) {
   const select = document.getElementById(selectId);
-  if (!select) {
-    return;
-  }
+  if (!select) return;
 
   select.innerHTML = "";
 
@@ -236,11 +570,9 @@ async function populateFilters() {
     showMessage(`Failed to load filters: ${error.message}`);
   }
 }
+// ^ TOP DROPDOWN FILTERS
 
-
-// ^ POPULATE OPTIONS FOR THE USER'S DROPDOWN MENU AUTOMATICALLY 
-
-// v CONSTRUCT SQL QUERIES 
+// v TOP SQL QUERIES
 function buildMainDataQuery(storeId, accountId) {
   const whereParts = [];
 
@@ -260,38 +592,35 @@ function buildMainDataQuery(storeId, accountId) {
   return `
     SELECT
       CalendarID,
-      ROUND(SUM(Amount), 2) AS TotalAmount 
+      ROUND(SUM(Amount), 2) AS TotalAmount
     FROM FullMainData
     ${whereClause}
     GROUP BY CalendarID
     ORDER BY CalendarID
   `;
 }
-// ^ CONSTRUCT SQL QUERIES 
 
-// Helper which constructs and returns an array containing the parts of the query
 function buildChartLabel(storeId, accountId) {
   const parts = [];
   parts.push("MainData Amount");
 
-  // Fetch all accounts, eg "All Accounts, Product Sales, Food, ..." 
   if (storeId) {
     parts.push(`Store ${storeId}`);
   } else {
     parts.push("All Stores");
   }
-  // Fetch all accounts, eg "All Accounts, Product Sales, Food, ..." 
+
   if (accountId) {
     parts.push(`Account ${accountId}`);
   } else {
     parts.push("All Accounts");
   }
 
-
   return parts.join(" · ");
 }
+// ^ TOP SQL QUERIES
 
-// Actually runs the SQL query
+// v TOP DASHBOARD RUN
 async function runDashboardQuery(event) {
   event.preventDefault();
 
@@ -309,8 +638,7 @@ async function runDashboardQuery(event) {
   const storeId = storeSelectEl.value;
   const accountId = accountSelectEl.value;
 
-  let query = "";
-  query = buildMainDataQuery(storeId, accountId);
+  const query = buildMainDataQuery(storeId, accountId);
   showQuery(query);
 
   try {
@@ -324,24 +652,60 @@ async function runDashboardQuery(event) {
     }
 
     renderTable(result);
-    renderChart(
-      result[0].values,
-      buildChartLabel(storeId, accountId),
-      "Amount $"
-    );
+    renderChart(result[0].values, buildChartLabel(storeId, accountId), "Amount $");
   } catch (error) {
     destroyChart();
     showMessage(`Error: ${error.message}`);
   }
 }
+// ^ TOP DASHBOARD RUN
+
+// v LOWER RESULTS RUN
+function runResultsFilter(event) {
+  event.preventDefault();
+
+  const resultsStoreSelect = document.getElementById("results_store_select");
+  const resultsMonthSelect = document.getElementById("results_month_select");
+
+  if (!resultsStoreSelect || !resultsMonthSelect) {
+    console.error("Results form elements are missing.");
+    return;
+  }
+
+  const storeId = resultsStoreSelect.value;
+  const monthId = resultsMonthSelect.value;
+  const filteredRows = getFilteredResults(storeId, monthId);
+
+  renderResultsSummaryCards(filteredRows, storeId, monthId);
+  renderRiskInsightPanel(filteredRows, storeId, monthId);
+}
+// ^ LOWER RESULTS RUN
 
 function attachEventListeners() {
   const dashboardForm = document.getElementById("dashboard_form");
   if (dashboardForm) {
     dashboardForm.addEventListener("submit", runDashboardQuery);
   }
+
+  const resultsForm = document.getElementById("results_form");
+  if (resultsForm) {
+    resultsForm.addEventListener("submit", runResultsFilter);
+  }
 }
 
-// ATTATCH ALL LISTENERS AS NEEDED TO THE SITE
-attachEventListeners();
-populateFilters();
+async function initDashboard() {
+  attachEventListeners();
+  await populateFilters();
+
+  try {
+    await loadResultsCsv();
+    populateResultsFilters();
+    renderResultsSummaryCards(resultsData, "", "");
+    renderRiskInsightPanel(resultsData, "", "");
+  } catch (error) {
+    console.error("Failed to load results.csv:", error);
+    showMessage(`Failed to load results.csv: ${error.message}`);
+  }
+}
+
+initDashboard();

@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <div class="all"> <!-- Overall site container -->
+  <div class="all">
     <header class="site-header">
       <div class="header-inner">
         <div class="header-brand">
@@ -32,125 +32,101 @@
       </div>
     </header>
 
-<!-- DASHBOARD, The central widgit, primary functionality of the site -->
-<form id="dashboard_form">
-  <label for="store_select">Store:</label>
-  <select id="store_select">
-    <option value="">All Stores</option>
-  </select>
+    <!-- TOP DASHBOARD: leave as-is -->
+    <form id="dashboard_form">
+      <label for="store_select">Store:</label>
+      <select id="store_select">
+        <option value="">All Stores</option>
+      </select>
 
-  <label for="account_select">Account:</label>
-  <select id="account_select">
-    <option value="">All Accounts</option>
-  </select>
+      <label for="account_select">Account:</label>
+      <select id="account_select">
+        <option value="">All Accounts</option>
+      </select>
 
-  <input type="submit" value="Run">
-</form>
+      <input type="submit" value="Run">
+    </form>
 
-
-<div class="chart_panel">
-  <img
-    id="chart_placeholder"
-    src="meta/img/chart_placeholder.png"
-    style="  
-      width: 50%;
-      display: block;
-      pointer-events: none;
-    "
-  />
-  <canvas id="performance_chart"></canvas>
-</div>
-<table id="dashboard"></table>
-<pre id="query_preview"></pre>
-<div id="dashboard_message"></div>
-<!-- END OF DASHBOARD ^ -->
-
-     <h1>Dynamic Summary Information</h1>
-     <div class="container">
-      <div class="box">
-        <img src="meta/img/placeholder_graph1.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph1.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph1.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph1.png" alt="Placeholder image" width="100%">
-      </div>
+    <div class="chart_panel">
+      <img
+        id="chart_placeholder"
+        src="meta/img/chart_placeholder.png"
+        style="
+          width: 50%;
+          display: block;
+          pointer-events: none;
+        "
+      />
+      <canvas id="performance_chart"></canvas>
     </div>
 
-    <h1>Static Curated Insights</h1>
-    <div class="container">
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
+    <table id="dashboard"></table>
+    <pre id="query_preview"></pre>
+    <div id="dashboard_message"></div>
+
+    <!-- LOWER RESULTS SECTION -->
+    <section class="results-section">
+      <h2 class="results-title">Risk Results Summary</h2>
+
+      <form id="results_form" class="results-filter-bar">
+        <label for="results_store_select">Store:</label>
+        <select id="results_store_select">
+          <option value="">All Stores</option>
+        </select>
+
+        <label for="results_month_select">Month:</label>
+        <select id="results_month_select">
+          <option value="">All Months</option>
+        </select>
+
+        <button type="submit">Apply</button>
+      </form>
+
+      <div id="results_summary_cards" class="results-summary-cards">
+        <!-- Summary cards inserted by JavaScript -->
       </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
+
+      <div class="results-single-visual">
+        <div class="results-insight-card">
+          <h3>Risk Insight Panel</h3>
+          <div id="risk_insight_panel"></div>
+        </div>
       </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-    </div>
-    <div class="container">
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-    </div>
-    <div class="container">
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-      <div class="box">
-        <img src="meta/img/placeholder_graph2.png" alt="Placeholder image" width="100%">
-      </div>
-    </div>
+    </section>
   </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <script src="scripts/script.js"></script>
 
-<!-- ===== FOOTER ===== -->
-<footer class="site-footer">
-  <div class="footer-inner">
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo-mark"></div>
+        <span class="footer-title">Data Quality Dashboard</span>
+      </div>
 
-    <div class="footer-brand">
-      <div class="footer-logo-mark"></div>
-      <span class="footer-title">Data Quality Dashboard</span>
+      <div class="footer-meta">
+        <span class="footer-school">Michigan Technological University</span>
+        <span class="footer-divider">·</span>
+        <span class="footer-course">MIS4400 Spring 2026</span>
+      </div>
+
+      <div class="footer-right">
+        <span class="footer-status">
+          <span class="footer-status-dot"></span>
+          Live Data
+        </span>
+        <span class="footer-copy">&copy; <span id="footer-year"></span> MTU Student Project</span>
+      </div>
     </div>
+    <div class="footer-bar"></div>
+  </footer>
 
-    <div class="footer-meta">
-      <span class="footer-school">Michigan Technological University</span>
-      <span class="footer-divider">·</span>
-      <span class="footer-course">MIS4400 Spring 2026</span>
-    </div>
-
-    <div class="footer-right">
-      <span class="footer-status">
-        <span class="footer-status-dot"></span>
-        Live Data
-      </span>
-      <span class="footer-copy">&copy; <span id="footer-year"></span> MTU Student Project</span>
-    </div>
-
-  </div>
-  <div class="footer-bar"></div>
-</footer>
-
-<script>
-  document.getElementById("footer-year").textContent = new Date().getFullYear();
-</script>
-
+  <script>
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
