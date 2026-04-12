@@ -558,6 +558,7 @@ async function populateFilters() {
     const accountResult = db.exec(`
       SELECT AccountID, AccountName
       FROM Accounts
+      WHERE AccountID NOT IN (40, 280, 370, 390, 400, 10080)
       ORDER BY AccountID
     `);
 
@@ -565,7 +566,7 @@ async function populateFilters() {
     const accountRows = accountResult.length ? accountResult[0].values : [];
 
     fillSelect("store_select", storeRows, "All Stores", 0, 1);
-    fillSelect("account_select", accountRows, "All Accounts", 0, 1);
+    fillSelect("account_select", accountRows, "Select an Account", 0, 1);
   } catch (error) {
     showMessage(`Failed to load filters: ${error.message}`);
   }
@@ -582,6 +583,8 @@ function buildMainDataQuery(storeId, accountId) {
 
   if (accountId !== "") {
     whereParts.push(`AccountID = ${Number(accountId)}`);
+  } else {
+    whereParts.push("INVALID!!");
   }
 
   let whereClause = "";
@@ -613,7 +616,7 @@ function buildChartLabel(storeId, accountId) {
   if (accountId) {
     parts.push(`Account ${accountId}`);
   } else {
-    parts.push("All Accounts");
+    parts.push("Select an Account");
   }
 
   return parts.join(" · ");

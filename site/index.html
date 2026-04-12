@@ -17,7 +17,7 @@
 
           <div class="header-text">
             <p class="header-kicker">Michigan Technological University</p>
-            <h1>Nova Business Intelligence Dashboard</h1>
+            <h1>Nova 2024 Annual Insights Dashboard</h1>
             <p class="header-subtitle">
               Delivering data-driven insights for faster, smarter decision-making.
             </p>
@@ -41,7 +41,7 @@
 
       <label for="account_select">Account:</label>
       <select id="account_select">
-        <option value="">All Accounts</option>
+        <option value="">Loading Accounts...</option>
       </select>
 
       <input type="submit" value="Run">
@@ -60,10 +60,11 @@
       <canvas id="performance_chart"></canvas>
     </div>
 
-    <table id="dashboard"></table>
-    <pre id="query_preview"></pre>
-    <div id="dashboard_message"></div>
-
+    <!-- Developer only debug tools, remove display:none to see query details -->
+    <table id="dashboard" style="display: none;"></table>
+    <pre id="query_preview" style="display: none;"></pre>
+    <div id="dashboard_message" style="display: none;"></div>
+    
     <!-- LOWER RESULTS SECTION -->
     <section class="results-section">
       <h2 class="results-title">Risk Results Summary</h2>
