@@ -558,7 +558,7 @@ async function populateFilters() {
     const accountResult = db.exec(`
       SELECT AccountID, AccountName
       FROM Accounts
-      WHERE AccountID NOT IN (40, 280, 370, 390, 400, 10080)
+      WHERE AccountID NOT IN (40, 100, 280, 370, 390, 400, 10080)
       ORDER BY AccountID
     `);
 
