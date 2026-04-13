@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Ordinary head settings-->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Business Intelligence Dashboard</title>
@@ -14,7 +13,6 @@
       <div class="header-inner">
         <div class="header-brand">
           <img src="meta/img/nova-business-logo.png" alt="Nova Business logo" class="header-logo" />
-
           <div class="header-text">
             <p class="header-kicker">Michigan Technological University</p>
             <h1>Nova 2024 Annual Insights Dashboard</h1>
@@ -23,7 +21,6 @@
             </p>
           </div>
         </div>
-
         <div class="header-badges">
           <span class="header-pill">Innovate</span>
           <span class="header-pill">Connect</span>
@@ -35,64 +32,164 @@
     <!-- TOP DASHBOARD: leave as-is -->
     <form id="dashboard_form">
       <label for="store_select">Store:</label>
-      <select id="store_select">
-        <option value="">All Stores</option>
-      </select>
-
+      <select id="store_select"><option value="">All Stores</option></select>
       <label for="account_select">Account:</label>
-      <select id="account_select">
-        <option value="">Loading Accounts...</option>
-      </select>
-
+      <select id="account_select"><option value="">Loading Accounts...</option></select>
       <input type="submit" value="Run">
     </form>
 
     <div class="chart_panel">
-      <img
-        id="chart_placeholder"
-        src="meta/img/chart_placeholder.png"
-        style="
-          width: 50%;
-          display: block;
-          pointer-events: none;
-        "
-      />
+      <img id="chart_placeholder" src="meta/img/chart_placeholder.png"
+        style="width:50%;display:block;pointer-events:none;" />
       <canvas id="performance_chart"></canvas>
     </div>
 
-    <!-- Developer only debug tools, remove display:none to see query details -->
-    <table id="dashboard" style="display: none;"></table>
-    <pre id="query_preview" style="display: none;"></pre>
-    <div id="dashboard_message" style="display: none;"></div>
-    
-    <!-- LOWER RESULTS SECTION -->
+    <table id="dashboard" style="display:none;"></table>
+    <pre id="query_preview" style="display:none;"></pre>
+    <div id="dashboard_message" style="display:none;"></div>
+
+    <!-- ============================================================ -->
+    <!-- RISK RESULTS SUMMARY — rebuilt                               -->
+    <!-- ============================================================ -->
     <section class="results-section">
       <h2 class="results-title">Risk Results Summary</h2>
 
-      <form id="results_form" class="results-filter-bar">
-        <label for="results_store_select">Store:</label>
-        <select id="results_store_select">
-          <option value="">All Stores</option>
-        </select>
-
-        <label for="results_month_select">Month:</label>
-        <select id="results_month_select">
-          <option value="">All Months</option>
-        </select>
-
-        <button type="submit">Apply</button>
-      </form>
-
-      <div id="results_summary_cards" class="results-summary-cards">
-        <!-- Summary cards inserted by JavaScript -->
+      <!-- [1] SYSTEM-WIDE SUMMARY BAR -->
+      <div id="system_summary_bar" class="system-summary-bar">
+        <p class="system-summary-loading">Loading network stats…</p>
       </div>
 
-      <div class="results-single-visual">
-        <div class="results-insight-card">
-          <h3>Risk Insight Panel</h3>
-          <div id="risk_insight_panel"></div>
+      <!-- [2] LEADERBOARD with search + top N selector -->
+      <div class="risk-leaderboard-wrap">
+        <div class="risk-leaderboard-header">
+          <div>
+            <h3 class="risk-leaderboard-title">Top At-Risk Owners</h3>
+            <p class="risk-leaderboard-sub" id="lb_subtitle">Ranked by overall risk — click any row to inspect</p>
+          </div>
+          <div class="lb-controls">
+            <input type="text" id="lb_search" placeholder="Search owner name or ID…" class="lb-search-input" />
+            <label for="flag_filter_select" class="lb-show-label">Flag:</label>
+            <select id="flag_filter_select">
+              <option value="">All Flags</option>
+            </select>
+            <label for="leaderboard_count" class="lb-show-label">Show:</label>
+            <select id="leaderboard_count">
+              <option value="5" selected>Top 5</option>
+              <option value="10">Top 10</option>
+              <option value="15">Top 15</option>
+              <option value="25">Top 25</option>
+              <option value="50">Top 50</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Flag filter active indicator -->
+        <div id="flag_filter_bar" class="flag-filter-bar" style="display:none;">
+          <span class="ffb-label">Filtering by flag:</span>
+          <span id="ffb_flag_name" class="ffb-flag-name"></span>
+          <span id="ffb_match_count" class="ffb-match-count"></span>
+          <button class="ffb-clear-btn" onclick="clearFlagFilter()">✕ Clear Filter</button>
+        </div>
+
+        <div id="risk_leaderboard" class="risk-leaderboard">
+          <p class="leaderboard-loading">Loading risk data…</p>
+        </div>
+        <div id="lb_pagination" class="lb-pagination"></div>
+      </div>
+
+      <!-- [3] OWNER INTELLIGENCE PANEL -->
+      <div id="owner_intelligence_panel" class="owner-intelligence-panel" style="display:none;">
+
+        <div class="oip-left">
+          <!-- Owner header with trajectory badge [2] -->
+          <div class="oip-owner-header">
+            <span id="oip_name_badge" class="oip-name-badge"></span>
+            <span id="oip_class_badge" class="oip-class-badge"></span>
+            <span id="oip_trajectory_badge" class="oip-trajectory-badge"></span>
+          </div>
+
+          <div id="oip_stat_cards" class="oip-stat-cards"></div>
+
+          <div class="oip-risk-bar">
+            <div class="risk-score-label-row">
+              <span>Overall Risk Probability</span>
+              <span id="oip_risk_pct_label">—</span>
+            </div>
+            <div class="risk-progress-track">
+              <div id="oip_risk_fill" class="risk-progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- [3] Flag Frequency with Glossary Tooltips -->
+          <div class="oip-flag-section">
+            <h4 class="oip-section-label">Risk Flag Frequency
+              <span class="tooltip-hint has-tooltip" data-tooltip="Hover over any flag name below to see its plain-English definition">?</span>
+            </h4>
+            <div id="oip_flag_breakdown" class="oip-flag-breakdown"></div>
+          </div>
+
+
+        </div>
+
+        <div class="oip-right">
+          <div class="oip-right-header">
+            <h4 class="oip-section-label">Owner Stores</h4>
+            <span id="oip_outlier_note" class="oip-outlier-note"></span>
+          </div>
+          <!-- Store cards get outlier [5] + trajectory [2] + compare button [7] -->
+          <div id="oip_store_cards" class="oip-store-cards"></div>
         </div>
       </div>
+
+      <!-- [7] STORE COMPARISON PANEL -->
+      <div id="store_comparison_panel" class="store-comparison-panel" style="display:none;">
+        <div class="scp-header">
+          <div>
+            <h3 class="scp-title">Store Comparison</h3>
+            <p class="scp-sub">Select up to 2 stores using the ⊕ button on any store card</p>
+          </div>
+          <button id="scp_clear_btn" type="button" class="scp-clear-btn">✕ Clear Comparison</button>
+        </div>
+        <div id="scp_content" class="scp-content"></div>
+      </div>
+
+      <!-- STORE MONTHLY DRILL-DOWN -->
+      <div id="store_drilldown_panel" class="store-drilldown-panel" style="display:none;">
+        <div class="sdp-header">
+          <h3 id="sdp_store_title">Store Detail</h3>
+          <div class="sdp-month-filter">
+            <label for="sdp_month_select">Month:</label>
+            <select id="sdp_month_select"><option value="">All Months</option></select>
+            <button id="sdp_apply_btn" type="button">Apply</button>
+          </div>
+        </div>
+        <div id="sdp_summary_cards" class="sdp-summary-cards"></div>
+        <div class="sdp-lower">
+          <div class="sdp-monthly-chart-block">
+            <h4 class="sdp-sub-title">Monthly Risk Trend</h4>
+            <div id="sdp_monthly_bars" class="sdp-monthly-bars"></div>
+          </div>
+          <div class="sdp-flag-log-block">
+            <h4 class="sdp-sub-title">Flag Log by Month</h4>
+            <div id="sdp_flag_log" class="sdp-flag-log-content"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- [6] NETWORK FLAG HEATMAP -->
+      <div class="network-heatmap-wrap">
+        <div class="risk-leaderboard-header">
+          <div>
+            <h3 class="risk-leaderboard-title">Network Flag Heatmap</h3>
+            <p class="risk-leaderboard-sub">
+              Top 12 flags across all 4,886 stores by month — each row scaled to its own max so seasonal patterns stand out
+            </p>
+          </div>
+          <button id="heatmap_toggle_btn" type="button" class="heatmap-toggle-btn">Show Heatmap</button>
+        </div>
+        <div id="network_heatmap" class="network-heatmap" style="display:none;"></div>
+      </div>
+
     </section>
   </div>
 
@@ -101,20 +198,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
   <script src="scripts/script.js"></script>
 
-  <!-- ===== FOOTER ===== -->
+  <!-- FOOTER -->
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="footer-logo-mark"></div>
         <span class="footer-title">Data Quality Dashboard</span>
       </div>
-
       <div class="footer-meta">
         <span class="footer-school">Michigan Technological University</span>
         <span class="footer-divider">·</span>
         <span class="footer-course">MIS4400 Spring 2026</span>
       </div>
-
       <div class="footer-right">
         <span class="footer-status">
           <span class="footer-status-dot"></span>
