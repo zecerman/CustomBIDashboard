@@ -1,1 +1,5 @@
 dev_scripts/*.txt
+dev_scripts/TXT Files/MainData.txt
+dev_scripts/TXT Files/*.txt
+site/data/data.db.bak
+site/data/*.bak

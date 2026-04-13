@@ -157,6 +157,12 @@ tr:hover {
   border: 1px solid #333;
   border-radius: 10px;
   background: #fff;
+  display: flex;
+  justify-content: center;  /* horizontal */
+  align-items: center;      /* vertical */
+}
+.chart_panel img {
+  display: block;
 }
 
 #query_preview {
